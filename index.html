@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IQ Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Body Styling - Gradient Background */
+body {
+    background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e);
+    background-size: 400% 400%;
+    animation: gradientBG 10s ease infinite;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Background Gradient Animation */
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Navigation Bar */
+nav {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    text-align: center;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #fff;
+    font-size: 18px;
+    transition: 0.3s;
+}
+
+nav ul li a:hover {
+    color: #ffd700;
+}
+  </style>
+
+  <header class="h">
+    <nav>
+        <ul>
+            <li><a href=" https://maithili2311.github.io/Homepage/">Home</a></li>
+            <li><a href=" https://maithili2311.github.io/Quiz/">Quiz</a></li>
+            <li><a href=" https://maithili2311.github.io/Formulas/">Formulas</a></li>
+            <li><a href=" https://maithili2311.github.io/FAQs/">FAQs</a></li>
+            <li><a href="http://localhost/login/">Login</a></li>
+        </ul>
+    </nav>
+</header>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom right, #e0f2fe, #ffffff);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center px-4 py-10">
+
+<div x-data="quizApp()" x-init="init()" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8 space-y-6">
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-indigo-700">🧠 IQ Quiz</h1>
+    <p class="text-gray-500">Test your intelligence with tricky questions!</p>
+  </div>
+
+  <!-- IQ Notification -->
+  <div
+    x-show="showIQMessage"
+    x-transition
+    class="text-center bg-purple-100 text-purple-800 font-semibold p-4 rounded-lg shadow"
+  >
+    🎉 Congratulations! Your IQ is 135.
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+    <div class="bg-indigo-500 h-full transition-all duration-500" :style="`width: ${(current / questions.length) * 100}%`"></div>
+  </div>
+
+  <div class="flex justify-between text-sm text-gray-500">
+    <span>Question <span x-text="current + 1"></span> of <span x-text="questions.length"></span></span>
+    <span>⏱️ Time Left: <span x-text="timer"></span>s</span>
+  </div>
+
+  <!-- Current Question -->
+  <template x-if="!finished && !reviewing">
+    <div>
+      <h2 class="text-xl font-semibold mb-4" x-text="currentQuestion.question"></h2>
+      <div class="space-y-3">
+        <template x-for="(option, index) in currentQuestion.options" :key="index">
+          <button
+            @click="selectAnswer(index)"
+            class="w-full px-4 py-2 rounded-lg border transition"
+            :class="{
+              'bg-green-100 border-green-400 text-green-700 font-semibold': answered && index === currentQuestion.correct,
+              'bg-red-100 border-red-400 text-red-700 font-semibold': answered && selected === index && index !== currentQuestion.correct,
+              'hover:bg-indigo-50 border-gray-300': !answered
+            }"
+            x-text="option"
+            :disabled="answered"
+          ></button>
+        </template>
+      </div>
+      <div class="mt-6 flex justify-between items-center">
+        <button
+          @click="nextQuestion"
+          x-show="answered"
+          class="ml-auto px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700"
+        >Next</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Finished -->
+  <template x-if="finished && !reviewing">
+    <div class="text-center space-y-4">
+      <h2 class="text-2xl font-bold text-green-700">🎉 Quiz Completed!</h2>
+      <p>You scored <span x-text="score"></span> out of <span x-text="questions.length"></span></p>
+      <p class="text-sm text-gray-500">Highest Score: <span x-text="highScore"></span></p>
+      <div class="space-x-2">
+        <button @click="restart" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Try Again</button>
+        <button @click="reviewing = true" class="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200">Review Answers</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Review Mode -->
+  <template x-if="reviewing">
+    <div>
+      <h2 class="text-xl font-bold mb-4 text-indigo-600">🧐 Review Answers</h2>
+      <template x-for="(q, idx) in questions" :key="idx">
+        <div class="mb-4">
+          <p class="font-semibold mb-1" x-text="'Q' + (idx + 1) + ': ' + q.question"></p>
+          <ul class="space-y-1">
+            <template x-for="(opt, i) in q.options" :key="i">
+              <li
+                class="px-3 py-1 rounded"
+                :class="{
+                  'bg-green-100 text-green-800': i === q.correct,
+                  'bg-red-100 text-red-800': i === answers[idx] && i !== q.correct
+                }"
+                x-text="opt"
+              ></li>
+            </template>
+          </ul>
+        </div>
+      </template>
+      <button @click="restart" class="mt-4 px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">🔄 Start Over</button>
+    </div>
+  </template>
+</div>
+
+<!-- SCRIPT -->
+<script>
+function quizApp() {
+  return {
+    questions: [], // All 25+ questions injected here
+    current: 0,
+    score: 0,
+    selected: null,
+    answered: false,
+    finished: false,
+    reviewing: false,
+    answers: [],
+    timer: 15,
+    interval: null,
+    highScore: localStorage.getItem("highScore") || 0,
+    showIQMessage: false,
+
+    get currentQuestion() {
+      return this.questions[this.current];
+    },
+
+    selectAnswer(index) {
+      if (!this.answered) {
+        this.selected = index;
+        this.answered = true;
+        this.answers[this.current] = index;
+        if (index === this.currentQuestion.correct) this.score++;
+        clearInterval(this.interval);
+      }
+    },
+
+    nextQuestion() {
+      this.current++;
+      this.selected = null;
+      this.answered = false;
+      this.timer = 15;
+
+      if (this.current === 8) {
+        this.showIQMessage = true;
+        setTimeout(() => {
+          this.showIQMessage = false;
+        }, 4000);
+      }
+
+      if (this.current >= this.questions.length) {
+        this.finished = true;
+        if (this.score > this.highScore) {
+          localStorage.setItem("highScore", this.score);
+          this.highScore = this.score;
+        }
+      } else {
+        this.startTimer();
+      }
+    },
+
+    startTimer() {
+      this.interval = setInterval(() => {
+        if (this.timer > 0) {
+          this.timer--;
+        } else {
+          this.selectAnswer(-1);
+        }
+      }, 1000);
+    },
+
+    restart() {
+      this.current = 0;
+      this.score = 0;
+      this.selected = null;
+      this.answered = false;
+      this.finished = false;
+      this.reviewing = false;
+      this.answers = [];
+      this.timer = 15;
+      this.showIQMessage = false;
+      this.startTimer();
+    },
+
+    init() {
+      // Define your 25+ questions here
+      this.questions = [
+        { question: "What is 2 + 2?", options: ["3", "4", "5", "6"], correct: 1 },
+        { question: "What is the capital of France?", options: ["Berlin", "London", "Paris", "Rome"], correct: 2 },
+        { question: "Which planet is closest to the sun?", options: ["Earth", "Venus", "Mercury", "Mars"], correct: 2 },
+        { question: "What comes after B?", options: ["C", "D", "E", "F"], correct: 0 },
+        { question: "What is 10 / 2?", options: ["3", "5", "8", "6"], correct: 1 },
+        { question: "Which animal barks?", options: ["Cat", "Dog", "Fish", "Cow"], correct: 1 },
+        { question: "What color is the sky?", options: ["Green", "Yellow", "Blue", "Pink"], correct: 2 },
+        { question: "How many legs do spiders have?", options: ["4", "6", "8", "10"], correct: 2 },
+        { question: "What is the opposite of hot?", options: ["Cold", "Cool", "Dry", "Warm"], correct: 0 },
+        { question: "Which shape has 3 sides?", options: ["Square", "Triangle", "Circle", "Rectangle"], correct: 1 },
+        { question: "Which number is the largest?", options: ["25", "52", "35", "45"], correct: 1 },
+        { question: "If you rearrange 'CIFAIPC', what word do you get?", options: ["Pacific", "Ficacip", "Capific", "Piccafi"], correct: 0 },
+        { question: "What is the next number? 2, 4, 8, 16, ?", options: ["18", "24", "32", "20"], correct: 2 },
+        { question: "Find the odd one out: Apple, Banana, Carrot, Grape", options: ["Apple", "Banana", "Carrot", "Grape"], correct: 2 },
+        { question: "What is the square root of 144?", options: ["10", "11", "12", "13"], correct: 2 },
+        { question: "Which is heavier: 1kg of steel or 1kg of cotton?", options: ["Steel", "Cotton", "Same", "Can't say"], correct: 2 },
+        { question: "Complete the pattern: A, C, E, G, ?", options: ["H", "I", "J", "I"], correct: 1 },
+        { question: "How many sides does a hexagon have?", options: ["5", "6", "7", "8"], correct: 1 },
+        { question: "What is 15% of 200?", options: ["30", "25", "20", "35"], correct: 0 },
+        { question: "Which of these is not a prime number?", options: ["2", "3", "4", "5"], correct: 2 },
+        { question: "If ALL SNAKES are ANIMALS, and SOME ANIMALS are DANGEROUS, are all SNAKES dangerous?", options: ["Yes", "No", "Maybe", "Cannot be determined"], correct: 3 },
+        { question: "What comes next? J, F, M, A, M, J, J, A, S, ?", options: ["T", "N", "O", "D"], correct: 2 },
+        { question: "Which is the odd one out: Red, Blue, Green, Circle?", options: ["Red", "Blue", "Green", "Circle"], correct: 3 },
+        { question: "If 5x = 20, what is x?", options: ["2", "3", "4", "5"], correct: 2 },
+        { question: "What is the chemical symbol for water?", options: ["O2", "CO2", "H2O", "HO"], correct: 2 }
+      ];
+      this.startTimer();
+    }
+  };
+}
+</script>
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('quizApp', quizApp);
+});
+</script>
+</body>
+</html>
